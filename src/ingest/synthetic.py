@@ -146,11 +146,12 @@ def generate_synthetic_city(
     end = pd.Timestamp("2024-12-31 23:00:00", tz="UTC")
     start = end - pd.DateOffset(months=months)
     timestamps = pd.date_range(start=start, end=end, freq="h")
-    n = len(timestamps)
 
     records: list[dict] = []
-    for i, ts in enumerate(timestamps):
+    for ts in timestamps:
+
         seasonal = _seasonal_factor(ts.month)
+
         daily = _daily_cycle(ts.hour)
         diwali = _diwali_spike(ts)
 
@@ -183,9 +184,7 @@ def generate_synthetic_city(
 
         # AQI with all factors
         aqi = np.clip(
-            profile["base_aqi"] * seasonal * daily
-            + diwali
-            + rng.normal(0, 15),
+            profile["base_aqi"] * seasonal * daily + diwali + rng.normal(0, 15),
             5,
             500,
         )
@@ -277,4 +276,3 @@ def generate_synthetic_data(
     truncated = df[df["timestamp"] < max_ts].copy()
     truncated.reset_index(drop=True, inplace=True)
     return truncated
-

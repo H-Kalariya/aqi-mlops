@@ -39,4 +39,5 @@ MODELS_DIR: Final[str] = "models"
 METRICS_FILE: Final[str] = "metrics.json"
 
 # Re-export feature columns from schema
-from src.common.schema import FEATURE_COLUMNS
+from src.common.schema import FEATURE_COLUMNS as FEATURE_COLUMNS
+

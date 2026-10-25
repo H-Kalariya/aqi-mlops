@@ -1,7 +1,5 @@
 """Owner: Member 3 — Tests for drift detection, continuous training, and model promotion."""
 
-import pandas as pd
-import pytest
 from src.drift.drift_check import run_drift_analysis
 from src.drift.promote import promote_model
 from src.ingest.synthetic import generate_synthetic_data
@@ -15,7 +13,9 @@ def test_drift_detected_on_shifted_data():
     shifted_df["pm10"] = shifted_df["pm10"] * 3.0 + 50.0
     shifted_df["aqi"] = shifted_df["aqi"] * 2.5 + 30.0
 
-    res = run_drift_analysis(reference_df=ref_df, current_df=shifted_df, drift_threshold=0.20)
+    res = run_drift_analysis(
+        reference_df=ref_df, current_df=shifted_df, drift_threshold=0.20
+    )
     assert res["drift_detected"] is True
     assert res["share_drifted"] > 0.20
     assert "pm25" in res["drifted_features"] or "aqi" in res["drifted_features"]
@@ -26,7 +26,9 @@ def test_drift_not_detected_on_identical_data():
     ref_df = generate_synthetic_data(cities=["delhi"], days=15, seed=42)
     curr_df = ref_df.copy()
 
-    res = run_drift_analysis(reference_df=ref_df, current_df=curr_df, drift_threshold=0.30)
+    res = run_drift_analysis(
+        reference_df=ref_df, current_df=curr_df, drift_threshold=0.30
+    )
     assert res["drift_detected"] is False
     assert res["share_drifted"] == 0.0
 
@@ -58,4 +60,7 @@ def test_promotion_rejects_when_challenger_is_worse(tmp_path):
     )
     assert decision["promoted"] is False
     assert decision["champion_version"] == "3"
-    assert "retaining" in decision["reason"].lower() or "did not improve" in decision["reason"].lower()
+    assert (
+        "retaining" in decision["reason"].lower()
+        or "did not improve" in decision["reason"].lower()
+    )

@@ -63,7 +63,9 @@ def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
                 report["issues"].append(
                     f"City {city_name}: {dupe_count} duplicate timestamps"
                 )
-                logger.warning("City %s has %d duplicate timestamps", city_name, dupe_count)
+                logger.warning(
+                    "City %s has %d duplicate timestamps", city_name, dupe_count
+                )
 
     # Check hourly monotonicity per city
     if "timestamp" in df.columns and "city" in df.columns:
@@ -84,14 +86,14 @@ def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         n_dropped = all_null_mask.sum()
         if n_dropped > 0:
             df = df[~all_null_mask].reset_index(drop=True)
-            report["issues"].append(f"Dropped {n_dropped} rows with all-null pollutants")
+            report["issues"].append(
+                f"Dropped {n_dropped} rows with all-null pollutants"
+            )
             logger.warning("Dropped %d rows with all-null pollutant values", n_dropped)
 
     # Fill remaining nulls with forward fill then backward fill per city
     if "city" in df.columns:
-        df = df.groupby("city", group_keys=False).apply(
-            lambda g: g.ffill().bfill()
-        )
+        df = df.groupby("city", group_keys=False).apply(lambda g: g.ffill().bfill())
 
     # Run Pandera validation
     try:

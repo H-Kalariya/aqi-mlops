@@ -11,8 +11,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
-import numpy as np
+from typing import Any
+
 import pandas as pd
 
 from src.common.config import get_config
@@ -20,7 +20,7 @@ from src.common.config import get_config
 
 def compute_ks_drift(
     ref_col: pd.Series, curr_col: pd.Series, threshold: float = 0.05
-) -> Tuple[bool, float]:
+) -> tuple[bool, float]:
     """Calculate drift using two-sample Kolmogorov-Smirnov test or empirical distance.
 
     Returns:
@@ -48,7 +48,7 @@ def run_drift_analysis(
     p_val_threshold: float = 0.05,
     html_output: Path | None = None,
     json_output: Path | None = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute drift analysis using Evidently if installed, or high-fidelity statistical fallback.
 
     Args:
@@ -79,7 +79,7 @@ def run_drift_analysis(
         if col in reference_df.columns and col in current_df.columns
     ]
 
-    drift_results: Dict[str, Any] = {}
+    drift_results: dict[str, Any] = {}
     html_content = ""
 
     # Attempt Evidently Report
@@ -100,17 +100,13 @@ def run_drift_analysis(
 
         report_dict = data_drift_report.as_dict()
         preset_metrics = report_dict.get("metrics", [])[0].get("result", {})
-        share_drifted = float(
-            preset_metrics.get("share_of_drifted_columns", 0.0)
-        )
+        share_drifted = float(preset_metrics.get("share_of_drifted_columns", 0.0))
         drift_detected = bool(
             preset_metrics.get("dataset_drift", share_drifted >= drift_threshold)
         )
 
         drifted_cols = []
-        for col_name, col_data in preset_metrics.get(
-            "drift_by_columns", {}
-        ).items():
+        for col_name, col_data in preset_metrics.get("drift_by_columns", {}).items():
             if col_data.get("drift_detected", False):
                 drifted_cols.append(col_name)
 
@@ -128,8 +124,8 @@ def run_drift_analysis(
 
     if not evidently_success:
         # High-fidelity Statistical Fallback
-        drifted_features: List[str] = []
-        feature_scores: Dict[str, Dict[str, Any]] = {}
+        drifted_features: list[str] = []
+        feature_scores: dict[str, dict[str, Any]] = {}
 
         for col in features_to_check:
             is_dr, score = compute_ks_drift(
@@ -145,9 +141,7 @@ def run_drift_analysis(
                 drifted_features.append(col)
 
         share_drifted = (
-            len(drifted_features) / len(features_to_check)
-            if features_to_check
-            else 0.0
+            len(drifted_features) / len(features_to_check) if features_to_check else 0.0
         )
         drift_detected = share_drifted >= drift_threshold
 
@@ -270,9 +264,7 @@ def main() -> int:
         return 0
 
     ref_df = pd.read_csv(args.reference)
-    curr_df = (
-        pd.read_csv(args.current) if args.current.exists() else ref_df.copy()
-    )
+    curr_df = pd.read_csv(args.current) if args.current.exists() else ref_df.copy()
 
     results = run_drift_analysis(
         reference_df=ref_df,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Final
 
+import pandas as pd
 import pandera as pa
 from pandera import Column, DataFrameSchema
 
@@ -136,18 +137,19 @@ FEATURE_SCHEMA: DataFrameSchema = DataFrameSchema(
 )
 
 
-def validate_raw_dataframe(df: "pd.DataFrame") -> "pd.DataFrame":
+def validate_raw_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Validate a raw DataFrame against RAW_SCHEMA."""
     import pandas as pd
+
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     return RAW_SCHEMA.validate(df)
 
 
-def validate_features_dataframe(df: "pd.DataFrame") -> "pd.DataFrame":
+def validate_features_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Validate a features DataFrame against FEATURE_SCHEMA."""
     import pandas as pd
+
     if "timestamp" in df.columns:
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     return FEATURE_SCHEMA.validate(df)
-

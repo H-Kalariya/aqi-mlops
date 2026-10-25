@@ -1,11 +1,11 @@
 """Owner: Member 1 — Tests for data pipeline, validation, features, and model training."""
 
-import numpy as np
 import pandas as pd
 import pytest
-from src.common.schema import FEATURE_COLUMNS, validate_features_dataframe, validate_raw_dataframe
-from src.ingest.synthetic import generate_synthetic_data
+
+from src.common.schema import validate_raw_dataframe
 from src.features.run import engineer_features, make_train_val_split
+from src.ingest.synthetic import generate_synthetic_data
 
 
 def test_synthetic_data_generation():
@@ -27,11 +27,13 @@ def test_schema_validation_passes():
 
 
 def test_schema_validation_fails_on_corrupt_data():
-    """Verify schema raises ValueError or SchemaError when ranges or nulls are violated."""
+    """Verify schema raises SchemaError when ranges or nulls are violated."""
+    import pandera.errors
+
     df = generate_synthetic_data(cities=["delhi"], days=2, seed=123)
     # Inject impossible negative values or nulls
     df.loc[0, "pm25"] = -999.0
-    with pytest.raises(Exception):
+    with pytest.raises((ValueError, pandera.errors.SchemaError)):
         validate_raw_dataframe(df)
 
 
@@ -45,7 +47,7 @@ def test_no_feature_leakage_and_time_split():
     train_df, val_df = make_train_val_split(featured, train_ratio=0.8)
     assert not train_df.empty
     assert not val_df.empty
-    
+
     # Train timestamps must precede or equal max train timestamp, val must be strictly after min val
     train_max_time = pd.to_datetime(train_df["timestamp"]).max()
     val_min_time = pd.to_datetime(val_df["timestamp"]).min()

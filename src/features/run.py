@@ -19,7 +19,6 @@ import logging
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 from src.common.config import PROJECT_ROOT, get_config, get_params
@@ -69,12 +68,12 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
 
     for window in mean_windows:
         df[f"aqi_roll_mean_{window}"] = df.groupby("city")["aqi"].transform(
-            lambda x: x.rolling(window=window, min_periods=1).mean()
+            lambda x, w=window: x.rolling(window=w, min_periods=1).mean()
         )
 
     for window in std_windows:
         df[f"aqi_roll_std_{window}"] = df.groupby("city")["aqi"].transform(
-            lambda x: x.rolling(window=window, min_periods=1).std().fillna(0)
+            lambda x, w=window: x.rolling(window=w, min_periods=1).std().fillna(0)
         )
 
     logger.info(
@@ -118,8 +117,9 @@ def create_multi_horizon_frame(df: pd.DataFrame) -> pd.DataFrame:
     horizons = params["train"]["horizons"]
 
     frames: list[pd.DataFrame] = []
-    for city_name, city_df in df.groupby("city"):
+    for _city_name, city_df in df.groupby("city"):
         city_df = city_df.sort_values("timestamp").reset_index(drop=True)
+
         for h in horizons:
             horizon_df = city_df.copy()
             horizon_df["horizon_h"] = h
@@ -177,9 +177,10 @@ def engineer_features(df: pd.DataFrame, horizon: int = 24) -> pd.DataFrame:
     df = add_lag_features(df)
     df = add_rolling_features(df)
     df = add_calendar_features(df)
-    df = df.dropna(subset=[c for c in df.columns if "lag" in c or "roll" in c]).reset_index(drop=True)
+    df = df.dropna(
+        subset=[c for c in df.columns if "lag" in c or "roll" in c]
+    ).reset_index(drop=True)
     return create_multi_horizon_frame(df)
-
 
 
 def make_train_val_split(
@@ -187,7 +188,6 @@ def make_train_val_split(
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Helper alias for time_based_split."""
     return time_based_split(df, split_ratio=train_ratio)
-
 
 
 def run_features(input_path: Path | None = None) -> None:
@@ -219,9 +219,7 @@ def run_features(input_path: Path | None = None) -> None:
     max_lag = max(config["features"]["aqi_lags"] + config["features"]["pm25_lags"])
     initial_len = len(df)
     df.dropna(
-        subset=[
-            col for col in df.columns if "lag" in col or "roll" in col
-        ],
+        subset=[col for col in df.columns if "lag" in col or "roll" in col],
         inplace=True,
     )
     df.reset_index(drop=True, inplace=True)

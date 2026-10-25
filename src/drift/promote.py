@@ -12,7 +12,8 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 import requests
 
 from src.common.config import PROJECT_ROOT, get_config
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def get_model_metric_from_registry(
     client: Any, model_name: str, alias_or_version: str
-) -> Optional[float]:
+) -> float | None:
     """Retrieve MAE metric for a given model version or alias from MLflow."""
     try:
         if alias_or_version in ["champion", "challenger"]:
@@ -36,9 +37,7 @@ def get_model_metric_from_registry(
             )
             run_id = model_version_obj.run_id
         else:
-            model_version_obj = client.get_model_version(
-                model_name, alias_or_version
-            )
+            model_version_obj = client.get_model_version(model_name, alias_or_version)
             run_id = model_version_obj.run_id
 
         run = client.get_run(run_id)
@@ -79,7 +78,7 @@ def promote_model(
     output_decision_path: Path | None = None,
     api_reload_url: str = "http://localhost:8000/admin/reload",
     force: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Compare challenger vs champion and promote if challenger has lower MAE.
 
     Args:
@@ -111,11 +110,13 @@ def promote_model(
 
         if metrics_path.exists():
             try:
-                with open(metrics_path, "r", encoding="utf-8") as f:
+                with open(metrics_path, encoding="utf-8") as f:
                     metrics_data = json.load(f)
                     challenger_mae = float(metrics_data.get("mae", 999.0))
                     if challenger_version is None:
-                        challenger_version = str(metrics_data.get("model_version", "latest"))
+                        challenger_version = str(
+                            metrics_data.get("model_version", "latest")
+                        )
             except Exception as e:
                 logger.warning("Failed reading metrics.json: %s", e)
 
@@ -129,19 +130,29 @@ def promote_model(
 
         if champion_mae is None:
             # Query champion alias
-            champ_metric = get_model_metric_from_registry(client, model_name, "champion")
+            champ_metric = get_model_metric_from_registry(
+                client, model_name, "champion"
+            )
             if champ_metric is not None:
                 champion_mae = champ_metric
             else:
                 # If no recorded metric for champion, assume reasonable baseline
                 champion_mae = 25.0
 
-        if challenger_version is None or challenger_version == "unknown" or challenger_version == "latest":
+        if (
+            challenger_version is None
+            or challenger_version == "unknown"
+            or challenger_version == "latest"
+        ):
             try:
-                challenger_obj = client.get_model_version_by_alias(model_name, "challenger")
+                challenger_obj = client.get_model_version_by_alias(
+                    model_name, "challenger"
+                )
                 challenger_version = challenger_obj.version
                 if challenger_mae is None:
-                    challenger_mae = get_model_metric_from_registry(client, model_name, "challenger")
+                    challenger_mae = get_model_metric_from_registry(
+                        client, model_name, "challenger"
+                    )
             except Exception:
                 pass
     except Exception as e:

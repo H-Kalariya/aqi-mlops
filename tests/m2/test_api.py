@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+
 from api.app import app, model_loader
 
 
@@ -10,6 +11,7 @@ class StubBooster:
 
     def predict(self, X):
         import numpy as np
+
         return np.full(len(X), 125.0)
 
 
@@ -21,7 +23,6 @@ def setup_stub_model(monkeypatch):
     model_loader.model_version = "v1-test"
     model_loader.model_alias = "champion"
     model_loader.is_loaded = True
-
 
 
 def test_health_endpoint():
@@ -80,9 +81,7 @@ def test_predict_bad_input_validation():
     client = TestClient(app)
     bad_payload = {
         "city": "unknown_city",
-        "readings": {
-            "pm25": -50.0  # Invalid negative reading
-        },
+        "readings": {"pm25": -50.0},  # Invalid negative reading
     }
     resp = client.post("/predict", json=bad_payload)
     assert resp.status_code == 422

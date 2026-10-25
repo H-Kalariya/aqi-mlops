@@ -16,7 +16,6 @@ import argparse
 import hashlib
 import json
 import logging
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -31,8 +30,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 from src.common.config import PROJECT_ROOT, get_config, get_params
 from src.common.constants import (
-    CHAMPION_ALIAS,
     CHALLENGER_ALIAS,
+    CHAMPION_ALIAS,
     REGISTERED_MODEL_NAME,
 )
 from src.common.schema import FEATURE_COLUMNS
@@ -198,8 +197,13 @@ def run_train(
 
         # Log feature importance
         importance = dict(
-            zip(feature_cols, model.feature_importance(importance_type="gain").tolist())
+            zip(
+                feature_cols,
+                model.feature_importance(importance_type="gain").tolist(),
+                strict=False,
+            )
         )
+
         mlflow.log_dict(importance, "feature_importance.json")
 
         # Log model
@@ -236,18 +240,14 @@ def run_train(
                     REGISTERED_MODEL_NAME, CHALLENGER_ALIAS, version
                 )
                 alias = CHALLENGER_ALIAS
-                logger.info(
-                    "Registered version %s as %s", version, CHALLENGER_ALIAS
-                )
+                logger.info("Registered version %s as %s", version, CHALLENGER_ALIAS)
             else:
                 # First model — set as champion
                 client.set_registered_model_alias(
                     REGISTERED_MODEL_NAME, CHAMPION_ALIAS, version
                 )
                 alias = CHAMPION_ALIAS
-                logger.info(
-                    "Registered version %s as %s", version, CHAMPION_ALIAS
-                )
+                logger.info("Registered version %s as %s", version, CHAMPION_ALIAS)
         else:
             version = "unknown"
             alias = "unknown"

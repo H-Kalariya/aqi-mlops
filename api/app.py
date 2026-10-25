@@ -14,11 +14,8 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from typing import Any
 
-import numpy as np
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
 
 from api.metrics import (
     ERRORS_COUNTER,
@@ -125,7 +122,9 @@ async def predict(request: PredictRequest) -> PredictResponse:
         forecasts = model_loader.predict(
             city=request.city,
             readings=request.readings.model_dump(),
-            history=[h.model_dump() for h in request.history] if request.history else None,
+            history=(
+                [h.model_dump() for h in request.history] if request.history else None
+            ),
         )
 
         # Record prediction values

@@ -64,15 +64,11 @@ class ModelLoader:
         import mlflow
         import mlflow.lightgbm
 
-        tracking_uri = os.environ.get(
-            "MLFLOW_TRACKING_URI", "sqlite:///mlflow.db"
-        )
+        tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
         mlflow.set_tracking_uri(tracking_uri)
         client = mlflow.MlflowClient()
 
-        mv = client.get_model_version_by_alias(
-            REGISTERED_MODEL_NAME, CHAMPION_ALIAS
-        )
+        mv = client.get_model_version_by_alias(REGISTERED_MODEL_NAME, CHAMPION_ALIAS)
         model_uri = f"models:/{REGISTERED_MODEL_NAME}@{CHAMPION_ALIAS}"
         self.model = mlflow.lightgbm.load_model(model_uri)
         self.model_version = str(mv.version)
@@ -228,7 +224,7 @@ class ModelLoader:
         """
         import datetime
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         return {
             "hour": now.hour,
             "day_of_week": now.weekday(),

@@ -89,7 +89,9 @@ def _has_champion(client: mlflow.MlflowClient) -> bool:
 def run_train(
     train_path: Path | None = None,
     val_path: Path | None = None,
+    fast: bool = False,
 ) -> dict:
+
     """Train LightGBM model and register with MLflow.
 
     Args:
@@ -174,12 +176,14 @@ def run_train(
             reference=train_set,
         )
 
+        boost_rounds = 30 if fast else lgbm_params.pop("n_estimators", 500)
         model = lgb.train(
             lgbm_params,
             train_set,
-            num_boost_round=lgbm_params.pop("n_estimators", 500),
+            num_boost_round=boost_rounds,
             valid_sets=[train_set, val_set],
             valid_names=["train", "val"],
+
             callbacks=[
                 lgb.early_stopping(stopping_rounds=early_stopping_rounds),
                 lgb.log_evaluation(period=50),
@@ -270,13 +274,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AQI Model Training")
     parser.add_argument("--train-path", default=None, help="Path to training CSV")
     parser.add_argument("--val-path", default=None, help="Path to validation CSV")
+    parser.add_argument(
+        "--fast", action="store_true", help="Train with fewer boost rounds"
+    )
     args = parser.parse_args()
 
     train_path = Path(args.train_path) if args.train_path else None
     val_path = Path(args.val_path) if args.val_path else None
 
     try:
-        result = run_train(train_path=train_path, val_path=val_path)
+        result = run_train(
+            train_path=train_path, val_path=val_path, fast=args.fast
+        )
+
         logger.info("Training result: %s", json.dumps(result, indent=2))
 
         # Save metrics

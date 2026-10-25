@@ -24,8 +24,8 @@ scrape_configs:
         type: 'A'
         port: 8000
     static_configs:
-      # Direct fallback target when not scaled
-      - targets: ['api:8000']
+      # Scrapes container if in docker, or host if running locally via uvicorn
+      - targets: ['api:8000', 'host.docker.internal:8000']
         labels:
           service: 'aqi-api'
 

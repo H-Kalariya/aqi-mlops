@@ -48,7 +48,7 @@
 - Custom alerting rules detect operational anomalies:
   - `APIDown`: Instance unreachable for > 1 min.
   - `HighErrorRate`: HTTP 5xx errors > 5% over 5 mins.
-  - `HighLatencyP95`: P95 response latency > 1 sec.
+  - `HighLatencyP95`: P95 response latency > 1.5 sec.
   - `PredictionDistributionShift`: Predicted AQI median shifts > 250 over 15 mins.
 - Grafana dashboard provisioned automatically from code without manual UI setup.
 

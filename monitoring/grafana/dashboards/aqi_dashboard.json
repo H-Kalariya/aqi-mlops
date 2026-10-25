@@ -125,6 +125,37 @@
           }
         }
       }
+    },
+    {
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 20 },
+      "id": 6,
+      "title": "Median Predicted AQI (P50, 15m)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "expr": "histogram_quantile(0.50, sum(rate(aqi_prediction_value_bucket[15m])) by (le))",
+          "legendFormat": "median AQI",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 150 },
+              { "color": "red", "value": 250 }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "thresholdsStyle": { "mode": "line" }
+          }
+        }
+      }
     }
   ],
   "refresh": "5s",

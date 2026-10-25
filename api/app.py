@@ -14,8 +14,11 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from typing import Any
 
+import numpy as np
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 
 from api.metrics import (
     ERRORS_COUNTER,
@@ -41,7 +44,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── App version from env ──────────────────────────────────────────────────────
-APP_VERSION = os.environ.get("APP_VERSION", "dev")
+APP_VERSION = os.environ.get("APP_VERSION", "1.1.0")
 
 # ── Global model loader ──────────────────────────────────────────────────────
 model_loader = ModelLoader()
@@ -122,9 +125,7 @@ async def predict(request: PredictRequest) -> PredictResponse:
         forecasts = model_loader.predict(
             city=request.city,
             readings=request.readings.model_dump(),
-            history=(
-                [h.model_dump() for h in request.history] if request.history else None
-            ),
+            history=[h.model_dump() for h in request.history] if request.history else None,
         )
 
         # Record prediction values

@@ -91,7 +91,6 @@ def run_train(
     val_path: Path | None = None,
     fast: bool = False,
 ) -> dict:
-
     """Train LightGBM model and register with MLflow.
 
     Args:
@@ -183,7 +182,6 @@ def run_train(
             num_boost_round=boost_rounds,
             valid_sets=[train_set, val_set],
             valid_names=["train", "val"],
-
             callbacks=[
                 lgb.early_stopping(stopping_rounds=early_stopping_rounds),
                 lgb.log_evaluation(period=50),
@@ -283,9 +281,7 @@ def main() -> None:
     val_path = Path(args.val_path) if args.val_path else None
 
     try:
-        result = run_train(
-            train_path=train_path, val_path=val_path, fast=args.fast
-        )
+        result = run_train(train_path=train_path, val_path=val_path, fast=args.fast)
 
         logger.info("Training result: %s", json.dumps(result, indent=2))
 

@@ -22,12 +22,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_ingest(source: str | None = None, city: str | None = None) -> pd.DataFrame:
+def run_ingest(
+    source: str | None = None,
+    city: str | None = None,
+    days: int | None = None,
+) -> pd.DataFrame:
     """Run the ingestion pipeline.
 
     Args:
         source: Override for ingest source (live|snapshot|synthetic).
         city: Optional single city to ingest.
+        days: Optional number of days of synthetic data to generate.
 
     Returns:
         Ingested DataFrame.
@@ -40,9 +45,15 @@ def run_ingest(source: str | None = None, city: str | None = None) -> pd.DataFra
     logger.info("Ingestion source: %s", source)
 
     if source == "synthetic":
-        from src.ingest.synthetic import generate_synthetic_all
+        if days:
+            from src.ingest.synthetic import generate_synthetic_data
 
-        df = generate_synthetic_all()
+            df = generate_synthetic_data(days=days)
+        else:
+            from src.ingest.synthetic import generate_synthetic_all
+
+            df = generate_synthetic_all()
+
     elif source == "snapshot":
         from src.ingest.snapshot import load_snapshot
 
@@ -84,10 +95,14 @@ def main() -> None:
         help="Data source (overrides config.yaml)",
     )
     parser.add_argument("--city", default=None, help="Single city to ingest")
+    parser.add_argument(
+        "--days", type=int, default=None, help="Days of synthetic data to generate"
+    )
     args = parser.parse_args()
 
     try:
-        run_ingest(source=args.source, city=args.city)
+        run_ingest(source=args.source, city=args.city, days=args.days)
+
     except Exception:
         logger.exception("Ingestion failed")
         sys.exit(1)

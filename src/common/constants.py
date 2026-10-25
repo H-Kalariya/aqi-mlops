@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Final
 
+from src.common.schema import FEATURE_COLUMNS as FEATURE_COLUMNS
+
 # ── Cities ────────────────────────────────────────────────────────────────────
 CITIES: Final[list[str]] = ["ahmedabad", "delhi", "mumbai"]
 
@@ -37,7 +39,3 @@ DATA_SNAPSHOT_DIR: Final[str] = "data/snapshot"
 REPORTS_DIR: Final[str] = "reports"
 MODELS_DIR: Final[str] = "models"
 METRICS_FILE: Final[str] = "metrics.json"
-
-# Re-export feature columns from schema
-from src.common.schema import FEATURE_COLUMNS as FEATURE_COLUMNS
-

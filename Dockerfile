@@ -39,7 +39,7 @@ COPY api/ api/
 COPY config.yaml params.yaml ./
 
 # Copy bundled model if available (for fallback)
-COPY models/ models/ 2>/dev/null || true
+COPY models/ models/
 
 # Set ownership
 RUN chown -R appuser:appuser /app

@@ -50,7 +50,8 @@ data/snapshot/*.csv
 reports/
 
 # Model artifacts
-models/
+models/*
+!models/.gitkeep
 *.pkl
 *.joblib
 *.lgb

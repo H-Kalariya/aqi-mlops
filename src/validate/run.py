@@ -93,7 +93,11 @@ def validate_data(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
 
     # Fill remaining nulls with forward fill then backward fill per city
     if "city" in df.columns:
-        df = df.groupby("city", group_keys=False).apply(lambda g: g.ffill().bfill())
+        fill_cols = [c for c in df.columns if c not in ["timestamp", "city"]]
+        if fill_cols:
+            df[fill_cols] = df.groupby("city")[fill_cols].transform(
+                lambda g: g.ffill().bfill()
+            )
 
     # Run Pandera validation
     try:

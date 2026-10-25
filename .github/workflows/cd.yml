@@ -1,0 +1,84 @@
+# Owner: M3 — CI/CD: Continuous Deployment workflow
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  train-and-package:
+    name: Train & Build Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install requirements
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Train model artifact
+        run: |
+          python -m src.ingest.run --source synthetic --days 90
+          python -m src.validate.run
+          python -m src.features.run
+          python -m src.train.run --fast
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=,format=short
+            type=raw,value=latest
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Rolling Deployment
+    runs-on: ubuntu-latest
+    needs: train-and-package
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Execute Rolling Update
+        env:
+          TARGET_TAG: ${{ github.sha }}
+        run: |
+          echo "Initiating deployment for commit SHA: ${TARGET_TAG}"
+          chmod +x deploy/scripts/*.sh
+          ./deploy/scripts/rolling_update.sh "${TARGET_TAG:0:7}"

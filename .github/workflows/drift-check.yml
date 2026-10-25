@@ -1,0 +1,59 @@
+# Owner: M3 — Continuous Training: Drift Detection Workflow
+name: Daily Drift Check
+
+on:
+  schedule:
+    # Daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    inputs:
+      inject_drift:
+        description: 'Inject synthetic drift before check'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-drift:
+    name: Evaluate Data Drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Inject drift (if requested)
+        if: ${{ inputs.inject_drift == true }}
+        run: python -m src.drift.inject_drift --factor 2.5 --days 7
+
+      - name: Run Drift Check Report
+        id: drift_check
+        run: |
+          python -m src.drift.drift_check
+          DRIFT_STATUS=$(python -c "import json; d=json.load(open('reports/drift_metrics.json')); print('true' if d.get('drift_detected') else 'false')")
+          echo "drift_detected=$DRIFT_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Trigger Retraining Workflow if Drift Detected
+        if: steps.drift_check.outputs.drift_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'retrain.yml',
+              ref: 'main',
+              inputs: {
+                trigger_reason: 'Automated drift detection trigger'
+              }
+            })

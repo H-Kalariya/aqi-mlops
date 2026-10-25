@@ -21,6 +21,4 @@ services:
       retries: 3
 
   api:
-    # Override: remove fixed container_name to allow scaling
-    container_name: ""
-    ports: []  # nginx handles external traffic
+    ports: !reset []

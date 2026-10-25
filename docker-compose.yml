@@ -6,7 +6,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: aqi-api
     ports:
       - "8000:8000"
     environment:

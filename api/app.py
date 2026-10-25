@@ -14,8 +14,10 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse
 
 from api.metrics import (
     ERRORS_COUNTER,
@@ -99,6 +101,18 @@ async def metrics_and_headers_middleware(request: Request, call_next) -> Respons
     response.headers["X-Model-Version"] = model_loader.model_version or "none"
 
     return response
+
+
+# ── GET / (Interactive Web UI) ────────────────────────────────────────────────
+@app.get("/", response_class=HTMLResponse)
+async def index() -> HTMLResponse:
+    """Serve interactive web demonstration dashboard."""
+    template_path = Path(__file__).parent / "templates" / "index.html"
+    if template_path.exists():
+        return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        content="<h1>AQI Forecaster API</h1><p>Visit <a href='/docs'>/docs</a></p>"
+    )
 
 
 # ── POST /predict ─────────────────────────────────────────────────────────────

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AQI Forecaster MLOps &mdash; Live Interactive Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: rgba(18, 24, 38, 0.85);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --good: #10b981;
+      --satisfactory: #84cc16;
+      --moderate: #f59e0b;
+      --poor: #f97316;
+      --very-poor: #ef4444;
+      --severe: #b91c1c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: radial-gradient(circle at 15% 15%, #131b2e 0%, var(--bg) 60%);
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .title-group h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 30%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .title-group p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--good);
+      box-shadow: 0 0 8px var(--good);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-btn {
+      color: var(--text-muted);
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .presets-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .preset-pill {
+      flex: 1;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+
+    .preset-pill:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+
+    .val-display {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 6px var(--accent);
+    }
+
+    select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .btn-predict {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-predict:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.85rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+      color: #fff;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 280px;
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      min-height: 4px;
+    }
+
+    .bar-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .bar-tooltip {
+      position: absolute;
+      top: -24px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: #fff;
+      display: none;
+    }
+
+    .bar-col:hover .bar-tooltip {
+      display: block;
+    }
+
+    .aqi-scale {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .scale-item {
+      flex: 1;
+      text-align: center;
+      padding: 0.35rem;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .admin-card {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px dashed var(--card-border);
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+    }
+
+    .btn-reload {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid var(--card-border);
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-reload:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>AQI Forecaster MLOps</h1>
+        <p>Zero-Downtime Multi-Horizon Air Quality Forecasting &bull; Indian Metropolitan Corridor</p>
+      </div>
+      <div class="status-badges">
+        <div class="badge">
+          <span class="badge-dot" id="health-dot"></span>
+          <span id="health-status">Online (200 OK)</span>
+        </div>
+        <div class="badge">
+          <span>App:</span>
+          <strong id="badge-app-version" style="color:var(--accent);">v1.1.0</strong>
+        </div>
+        <div class="badge">
+          <span>Champion Model:</span>
+          <strong id="badge-model-version" style="color:#10b981;">v1 @champion</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-links">
+      <a href="/docs" target="_blank" class="nav-btn">&rarr; Interactive Swagger Docs (/docs)</a>
+      <a href="/metrics" target="_blank" class="nav-btn">&rarr; Prometheus Metrics (/metrics)</a>
+      <a href="http://localhost:5000" target="_blank" class="nav-btn">&rarr; MLflow Registry (Port 5000)</a>
+      <a href="http://localhost:3000" target="_blank" class="nav-btn">&rarr; Grafana Dashboard (Port 3000)</a>
+    </div>
+
+    <div class="main-grid">
+      <!-- Input Controls Column -->
+      <div class="card">
+        <div class="card-title">
+          <span>Telemetry Readings</span>
+          <span style="font-size:0.75rem; color:var(--text-muted);">CPCB Format</span>
+        </div>
+
+        <div class="presets-row">
+          <button class="preset-pill" onclick="applyPreset('good')">Clean Day</button>
+          <button class="preset-pill" onclick="applyPreset('moderate')">Typical Moderate</button>
+          <button class="preset-pill" onclick="applyPreset('severe')">Severe Smog</button>
+        </div>
+
+        <div class="form-group">
+          <label>Target City</label>
+          <select id="city">
+            <option value="delhi">Delhi (National Capital Region)</option>
+            <option value="ahmedabad" selected>Ahmedabad (Gujarat)</option>
+            <option value="mumbai">Mumbai (Maharashtra Coast)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label><span>PM2.5 (&mu;g/m&sup3;)</span> <span class="val-display" id="val-pm25">65</span></label>
+          <input type="range" id="pm25" min="5" max="450" value="65" oninput="updateVal('pm25')">
+        </div>
+
+        <div class="form-group">
+          <label><span>PM10 (&mu;g/m&sup3;)</span> <span class="val-display" id="val-pm10">110</span></label>
+          <input type="range" id="pm10" min="10" max="600" value="110" oninput="updateVal('pm10')">
+        </div>
+
+        <div class="form-group">
+          <label><span>NO2 (&mu;g/m&sup3;)</span> <span class="val-display" id="val-no2">28</span></label>
+          <input type="range" id="no2" min="2" max="150" value="28" oninput="updateVal('no2')">
+        </div>
+
+        <div class="form-group">
+          <label><span>SO2 (&mu;g/m&sup3;)</span> <span class="val-display" id="val-so2">9</span></label>
+          <input type="range" id="so2" min="1" max="100" value="9" oninput="updateVal('so2')">
+        </div>
+
+        <div class="form-group">
+          <label><span>CO (mg/m&sup3;)</span> <span class="val-display" id="val-co">0.9</span></label>
+          <input type="range" id="co" min="0.1" max="8.0" step="0.1" value="0.9" oninput="updateVal('co')">
+        </div>
+
+        <div class="form-group">
+          <label><span>O3 (&mu;g/m&sup3;)</span> <span class="val-display" id="val-o3">35</span></label>
+          <input type="range" id="o3" min="5" max="160" value="35" oninput="updateVal('o3')">
+        </div>
+
+        <div class="form-group">
+          <label><span>Temperature (&deg;C)</span> <span class="val-display" id="val-temp">31</span></label>
+          <input type="range" id="temp" min="5" max="48" value="31" oninput="updateVal('temp')">
+        </div>
+
+        <div class="form-group">
+          <label><span>Humidity (%)</span> <span class="val-display" id="val-humidity">45</span></label>
+          <input type="range" id="humidity" min="10" max="98" value="45" oninput="updateVal('humidity')">
+        </div>
+
+        <div class="form-group">
+          <label><span>Wind Speed (m/s)</span> <span class="val-display" id="val-wind">3.0</span></label>
+          <input type="range" id="wind" min="0.2" max="15.0" step="0.1" value="3.0" oninput="updateVal('wind')">
+        </div>
+
+        <button class="btn-predict" onclick="fetchForecast()">
+          <span>&#9889; Run 24-Hour Forecast</span>
+        </button>
+      </div>
+
+      <!-- Forecast Chart Column -->
+      <div class="card">
+        <div class="card-title">
+          <span>24-Hour Ahead Multi-Horizon Projection</span>
+          <span id="forecast-timestamp" style="font-size:0.8rem; font-family:'JetBrains Mono',monospace; color:var(--text-muted);">&mdash;</span>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-label">Estimated Current</div>
+            <div class="stat-val" id="stat-current" style="color:var(--accent);">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Min 24h AQI</div>
+            <div class="stat-val" id="stat-min">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Max 24h AQI</div>
+            <div class="stat-val" id="stat-max">--</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Inference Latency</div>
+            <div class="stat-val" id="stat-latency" style="font-size:1.25rem;">-- ms</div>
+          </div>
+        </div>
+
+        <div class="chart-container" id="chart">
+          <!-- Populated dynamically with 24 horizon bars -->
+        </div>
+
+        <div class="aqi-scale">
+          <div class="scale-item" style="background:var(--good); color:#000;">Good (0-50)</div>
+          <div class="scale-item" style="background:var(--satisfactory); color:#000;">Satisfactory (51-100)</div>
+          <div class="scale-item" style="background:var(--moderate); color:#000;">Moderate (101-200)</div>
+          <div class="scale-item" style="background:var(--poor); color:#fff;">Poor (201-300)</div>
+          <div class="scale-item" style="background:var(--very-poor); color:#fff;">Very Poor (301-400)</div>
+          <div class="scale-item" style="background:var(--severe); color:#fff;">Severe (401-500)</div>
+        </div>
+
+        <div class="admin-card">
+          <div>
+            <strong>Model Promotion & Hot-Reload</strong>
+            <p style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">Trigger zero-restart model reload from MLflow registry</p>
+          </div>
+          <button class="btn-reload" onclick="triggerReload()">Hot Reload Model</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateVal(id) {
+      document.getElementById('val-' + id).innerText = document.getElementById(id).value;
+    }
+
+    function applyPreset(name) {
+      const presets = {
+        good: { pm25: 25, pm10: 45, no2: 15, so2: 5, co: 0.4, o3: 20, temp: 24, humidity: 60, wind: 4.5 },
+        moderate: { pm25: 65, pm10: 110, no2: 28, so2: 9, co: 0.9, o3: 35, temp: 31, humidity: 45, wind: 3.0 },
+        severe: { pm25: 220, pm10: 380, no2: 75, so2: 22, co: 2.8, o3: 65, temp: 15, humidity: 75, wind: 1.2 }
+      };
+      const p = presets[name];
+      for (const k in p) {
+        document.getElementById(k).value = p[k];
+        updateVal(k);
+      }
+      fetchForecast();
+    }
+
+    function getAqiColor(aqi) {
+      if (aqi <= 50) return '#10b981';
+      if (aqi <= 100) return '#84cc16';
+      if (aqi <= 200) return '#f59e0b';
+      if (aqi <= 300) return '#f97316';
+      if (aqi <= 400) return '#ef4444';
+      return '#b91c1c';
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('badge-app-version').innerText = 'v' + data.app_version;
+          document.getElementById('badge-model-version').innerText = 'v' + (data.model_version || '1') + ' @champion';
+          document.getElementById('health-dot').style.background = '#10b981';
+          document.getElementById('health-status').innerText = 'Online (200 OK)';
+        }
+      } catch (e) {
+        document.getElementById('health-dot').style.background = '#ef4444';
+        document.getElementById('health-status').innerText = 'Offline';
+      }
+    }
+
+    async function fetchForecast() {
+      const city = document.getElementById('city').value;
+      const pm25 = parseFloat(document.getElementById('pm25').value);
+      const pm10 = parseFloat(document.getElementById('pm10').value);
+      const no2 = parseFloat(document.getElementById('no2').value);
+      const so2 = parseFloat(document.getElementById('so2').value);
+      const co = parseFloat(document.getElementById('co').value);
+      const o3 = parseFloat(document.getElementById('o3').value);
+      const temp = parseFloat(document.getElementById('temp').value);
+      const humidity = parseFloat(document.getElementById('humidity').value);
+      const wind = parseFloat(document.getElementById('wind').value);
+
+      const payload = {
+        city: city,
+        readings: {
+          pm25: pm25, pm10: pm10, no2: no2, so2: so2, co: co, o3: o3,
+          temperature: temp, humidity: humidity, wind_speed: wind
+        }
+      };
+
+      const startTime = performance.now();
+      try {
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const duration = Math.round(performance.now() - startTime);
+        document.getElementById('stat-latency').innerText = duration + ' ms';
+
+        if (!res.ok) {
+          alert('Prediction failed: ' + res.statusText);
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById('forecast-timestamp').innerText = data.generated_at;
+        renderChart(data.forecast, pm25);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderChart(forecast, currentPm25) {
+      const container = document.getElementById('chart');
+      container.innerHTML = '';
+
+      const aqiValues = forecast.map(f => f.aqi);
+      const minAqi = Math.min(...aqiValues);
+      const maxAqi = Math.max(...aqiValues);
+      const currentEstimated = Math.round(currentPm25 * 1.5);
+
+      document.getElementById('stat-current').innerText = currentEstimated;
+      document.getElementById('stat-min').innerText = minAqi;
+      document.getElementById('stat-max').innerText = maxAqi;
+
+      const chartMax = Math.max(250, maxAqi + 20);
+
+      forecast.forEach(item => {
+        const col = document.createElement('div');
+        col.className = 'bar-col';
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'bar-tooltip';
+        tooltip.innerText = item.aqi;
+
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const heightPct = Math.min(100, (item.aqi / chartMax) * 100);
+        bar.style.height = heightPct + '%';
+        bar.style.background = getAqiColor(item.aqi);
+
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.innerText = item.horizon_h + 'h';
+
+        col.appendChild(tooltip);
+        col.appendChild(bar);
+        col.appendChild(label);
+        container.appendChild(col);
+      });
+    }
+
+    async function triggerReload() {
+      try {
+        const res = await fetch('/admin/reload', { method: 'POST' });
+        const data = await res.json();
+        alert('Model Reloaded: Old Version=' + data.old_version + ' -> New Version=' + data.new_version);
+        checkHealth();
+      } catch (e) {
+        alert('Reload failed: ' + e);
+      }
+    }
+
+    // Initialize on load
+    checkHealth();
+    fetchForecast();
+  </script>
+</body>
+</html>

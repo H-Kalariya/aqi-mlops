@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# MLflow
+mlflow.db
+mlruns/
+mlartifacts/
+
+# DVC
+/dvc-remote/
+
+# Data (tracked by DVC)
+data/raw/
+data/processed/
+data/snapshot/*.csv
+!data/snapshot/.gitkeep
+
+# Reports
+reports/
+
+# Model artifacts
+models/
+*.pkl
+*.joblib
+*.lgb
+
+# Git scenarios sandbox
+git_scenarios/sandbox/
+git_scenarios/evidence/*
+!git_scenarios/evidence/.gitkeep
+
+
+# Handoff generated
+handoff/member1/
+handoff/member2/
+handoff/member3/
+handoff/*.zip
+
+# Jupyter
+.ipynb_checkpoints/
+
+# pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Misc
+*.log
+*.tmp

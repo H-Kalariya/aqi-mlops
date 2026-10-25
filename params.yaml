@@ -1,0 +1,31 @@
+# Owner: M1 — Pipeline parameters (consumed by DVC stages)
+# LightGBM + pipeline hyperparameters
+
+# Random seed for reproducibility
+seed: 42
+
+# LightGBM hyperparameters
+lgbm:
+  n_estimators: 500
+  learning_rate: 0.05
+  max_depth: 8
+  num_leaves: 63
+  min_child_samples: 20
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_alpha: 0.1
+  reg_lambda: 0.1
+  verbose: -1
+  n_jobs: -1
+  random_state: 42
+
+# Training settings
+train:
+  validation_size: 0.2
+  early_stopping_rounds: 50
+  horizons: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+
+# Evaluation thresholds
+evaluate:
+  max_acceptable_mae: 50.0
+  max_acceptable_rmse: 70.0

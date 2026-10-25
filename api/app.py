@@ -115,6 +115,12 @@ async def index() -> HTMLResponse:
     )
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    """Handle browser favicon request cleanly."""
+    return Response(status_code=204)
+
+
 # ── POST /predict ─────────────────────────────────────────────────────────────
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest) -> PredictResponse:

@@ -203,16 +203,16 @@ def run_drift_analysis(
 
 def parse_args() -> argparse.Namespace:
     cfg = get_config()
-    default_ref = Path(cfg.paths.processed) / "features.csv"
+    default_ref = Path(cfg["paths"]["processed"]) / "features.csv"
     if not default_ref.exists():
-        default_ref = Path(cfg.paths.raw) / "aqi_data.csv"
+        default_ref = Path(cfg["paths"]["raw"]) / "aqi_raw.csv"
 
-    default_curr = Path(cfg.paths.processed) / "drifted_data.csv"
+    default_curr = Path(cfg["paths"]["processed"]) / "drifted_data.csv"
     if not default_curr.exists():
         default_curr = default_ref
 
-    default_json = Path(cfg.paths.reports) / "drift_metrics.json"
-    default_html = Path(cfg.paths.reports) / "drift_report.html"
+    default_json = Path(cfg["paths"]["reports"]) / "drift_metrics.json"
+    default_html = Path(cfg["paths"]["reports"]) / "drift_report.html"
 
     parser = argparse.ArgumentParser(
         description="Monitor and compute data drift between reference and current AQI data"
@@ -244,8 +244,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--threshold",
         type=float,
-        default=cfg.drift.share_drifted_threshold,
-        help=f"Drifted feature share threshold (default: {cfg.drift.share_drifted_threshold})",
+        default=cfg["drift"]["share_drifted_threshold"],
+        help=f"Drifted feature share threshold (default: {cfg['drift']['share_drifted_threshold']})",
     )
     return parser.parse_args()
 

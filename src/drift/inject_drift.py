@@ -79,11 +79,11 @@ def inject_drift(
 
 def parse_args() -> argparse.Namespace:
     cfg = get_config()
-    default_input = Path(cfg.paths.processed) / "features.csv"
+    default_input = Path(cfg["paths"]["processed"]) / "features.csv"
     if not default_input.exists():
-        default_input = Path(cfg.paths.raw) / "aqi_data.csv"
+        default_input = Path(cfg["paths"]["raw"]) / "aqi_raw.csv"
 
-    default_output = Path(cfg.paths.processed) / "drifted_data.csv"
+    default_output = Path(cfg["paths"]["processed"]) / "drifted_data.csv"
 
     parser = argparse.ArgumentParser(
         description="Inject distribution drift into AQI dataset"
@@ -109,8 +109,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--days",
         type=int,
-        default=cfg.drift.current_window_days,
-        help=f"Number of recent days to perturb (default: {cfg.drift.current_window_days})",
+        default=cfg["drift"]["current_window_days"],
+        help=f"Number of recent days to perturb (default: {cfg['drift']['current_window_days']})",
     )
     parser.add_argument(
         "--city",

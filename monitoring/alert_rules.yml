@@ -1,0 +1,46 @@
+# Owner: M3 — Monitoring: Prometheus alert rules
+# Rules: APIDown, HighErrorRate, HighLatencyP95, PredictionDistributionShift
+
+groups:
+  - name: aqi_api_alerts
+    rules:
+      - alert: APIDown
+        expr: up{job="aqi-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AQI API instance is down"
+          description: "Instance {{ $labels.instance }} has been unreachable for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: >
+          (sum(rate(aqi_errors_total[5m])) or vector(0))
+          /
+          (sum(rate(aqi_http_requests_total[5m])) > 0) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API error rate detected"
+          description: "Error rate is above 5% over the last 5 minutes (current: {{ $value | humanizePercentage }})."
+
+      - alert: HighLatencyP95
+        expr: >
+          histogram_quantile(0.95, sum(rate(aqi_request_latency_seconds_bucket[5m])) by (le, endpoint)) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 request latency exceeds 1 second"
+          description: "Endpoint {{ $labels.endpoint }} P95 latency is {{ $value }}s."
+
+      - alert: PredictionDistributionShift
+        expr: >
+          histogram_quantile(0.50, sum(rate(aqi_prediction_value_bucket[15m])) by (le)) > 250
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AQI prediction distribution has shifted unusually high"
+          description: "Median predicted AQI is exceeding 250 over 15 minutes, indicating severe smog or data drift."

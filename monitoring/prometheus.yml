@@ -1,0 +1,42 @@
+# Owner: M3 — Monitoring: Prometheus scrape configuration
+# Scrapes API replicas, MLflow, and Alertmanager
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'alertmanager:9093'
+
+scrape_configs:
+  - job_name: 'aqi-api'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    dns_sd_configs:
+      - names:
+          - 'api'
+        type: 'A'
+        port: 8000
+    static_configs:
+      # Direct fallback target when not scaled
+      - targets: ['api:8000']
+        labels:
+          service: 'aqi-api'
+
+  - job_name: 'aqi-api-canary'
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['api-stable:8000', 'api-canary:8000']
+        labels:
+          service: 'aqi-api-canary-test'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

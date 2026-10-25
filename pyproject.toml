@@ -1,0 +1,23 @@
+[project]
+name = "aqi-forecaster"
+version = "1.0.0"
+description = "AQI Forecasting MLOps System for Ahmedabad, Delhi and Mumbai"
+requires-python = ">=3.11"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+

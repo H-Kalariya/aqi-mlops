@@ -1,0 +1,71 @@
+# Owner: M1 — DVC pipeline definition
+stages:
+  ingest:
+    cmd: python -m src.ingest.run
+    deps:
+      - src/ingest/run.py
+      - src/ingest/synthetic.py
+      - src/ingest/snapshot.py
+      - src/ingest/clients.py
+      - src/common/config.py
+    params:
+      - config.yaml:
+          - ingest
+          - cities
+    outs:
+      - data/raw/aqi_raw.csv
+
+  validate:
+    cmd: python -m src.validate.run
+    deps:
+      - src/validate/run.py
+      - src/common/schema.py
+      - data/raw/aqi_raw.csv
+    outs:
+      - data/raw/aqi_validated.csv
+    metrics:
+      - reports/validation_report.json:
+          cache: false
+
+  features:
+    cmd: python -m src.features.run
+    deps:
+      - src/features/run.py
+      - data/raw/aqi_validated.csv
+    params:
+      - config.yaml:
+          - features
+      - params.yaml:
+          - train.horizons
+    outs:
+      - data/processed/features.csv
+      - data/processed/train.csv
+      - data/processed/val.csv
+
+  train:
+    cmd: python -m src.train.run
+    deps:
+      - src/train/run.py
+      - data/processed/train.csv
+      - data/processed/val.csv
+    params:
+      - params.yaml:
+          - lgbm
+          - train
+          - seed
+    outs:
+      - models/model.lgb
+      - models/model.joblib
+    metrics:
+      - metrics.json:
+          cache: false
+
+  evaluate:
+    cmd: python -m src.evaluate.run
+    deps:
+      - src/evaluate/run.py
+      - data/processed/val.csv
+      - models/model.lgb
+    metrics:
+      - reports/evaluation_report.json:
+          cache: false

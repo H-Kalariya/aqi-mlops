@@ -58,6 +58,16 @@ def run_ingest(
         from src.ingest.snapshot import load_snapshot
 
         df = load_snapshot(city=city)
+    elif source in ("real", "open-meteo"):
+        from src.ingest.clients import fetch_real_all, fetch_real_open_meteo
+
+        past_days = days or 30
+        if city:
+            df = fetch_real_open_meteo(city=city, days=past_days)
+        else:
+            cities = config.get("cities", ["delhi", "ahmedabad", "mumbai"])
+            df = fetch_real_all(cities=cities, days=past_days)
+
     elif source == "live":
         from src.ingest.clients import fetch_data_gov_in
 
@@ -69,10 +79,12 @@ def run_ingest(
             except Exception:
                 logger.exception("Failed to fetch live data for %s", c)
         if not dfs:
-            logger.error("No live data fetched. Falling back to synthetic.")
-            from src.ingest.synthetic import generate_synthetic_all
+            logger.warning(
+                "No data.gov.in data fetched. Falling back to real Open-Meteo stream."
+            )
+            from src.ingest.clients import fetch_real_all
 
-            df = generate_synthetic_all()
+            df = fetch_real_all(cities=cities, days=days or 30)
         else:
             df = pd.concat(dfs, ignore_index=True)
     else:
@@ -90,13 +102,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="AQI Data Ingestion")
     parser.add_argument(
         "--source",
-        choices=["live", "snapshot", "synthetic"],
+        choices=["live", "real", "open-meteo", "snapshot", "synthetic"],
         default=None,
         help="Data source (overrides config.yaml)",
     )
     parser.add_argument("--city", default=None, help="Single city to ingest")
     parser.add_argument(
-        "--days", type=int, default=None, help="Days of synthetic data to generate"
+        "--days", type=int, default=None, help="Days of data to fetch/generate"
     )
     args = parser.parse_args()
 
